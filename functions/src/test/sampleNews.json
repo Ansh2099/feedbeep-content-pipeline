@@ -1,0 +1,24 @@
+{
+  "status": "success",
+  "totalResults": 2,
+  "results": [
+    {
+      "title": "OpenAI Releases GPT-4 Turbo with Enhanced Capabilities",
+      "link": "https://example.com/openai-gpt4-turbo",
+      "content": "OpenAI has announced the release of GPT-4 Turbo, a significant upgrade to their flagship language model. The new version features improved reasoning capabilities, better code generation, and enhanced safety measures. According to OpenAI, GPT-4 Turbo can handle more complex tasks and provides more accurate responses across various domains. The model has been trained on data up to April 2023 and includes several architectural improvements that make it more efficient and reliable. Early tests show that GPT-4 Turbo performs better on mathematical problems, creative writing tasks, and technical documentation. The release also includes new API features that allow developers to fine-tune the model for specific use cases. OpenAI has emphasized that safety remains a top priority, with built-in safeguards to prevent misuse. The company plans to gradually roll out access to existing API users over the coming weeks.",
+      "image_url": "https://example.com/images/gpt4-turbo.jpg",
+      "pubDate": "2024-01-15T10:30:00Z",
+      "category": ["technology", "ai", "openai"],
+      "keywords": ["GPT-4", "AI", "OpenAI", "language model", "machine learning"]
+    },
+    {
+      "title": "Tesla Announces New Electric Vehicle Factory in Asia",
+      "link": "https://example.com/tesla-asia-factory",
+      "content": "Tesla has revealed plans to build a new electric vehicle manufacturing facility in Asia, marking a significant expansion of the company's global production capacity. The new factory will focus on producing Tesla's latest Model Y and upcoming affordable electric vehicle. According to Tesla CEO Elon Musk, the facility will incorporate the most advanced manufacturing technologies and automation systems. The factory is expected to create thousands of jobs and significantly reduce delivery times for customers in the Asian market. Tesla has been working closely with local governments to ensure the facility meets all environmental and safety standards. The company plans to source materials locally where possible to reduce carbon footprint and support the regional economy. Construction is expected to begin within the next six months, with production starting in 2025. This expansion comes as Tesla continues to see strong demand for electric vehicles globally, particularly in Asian markets where environmental concerns and government incentives are driving adoption.",
+      "image_url": "https://example.com/images/tesla-factory.jpg",
+      "pubDate": "2024-01-15T14:45:00Z",
+      "category": ["automotive", "tesla", "electric vehicles"],
+      "keywords": ["Tesla", "electric vehicles", "manufacturing", "Asia", "sustainability"]
+    }
+  ]
+} 
