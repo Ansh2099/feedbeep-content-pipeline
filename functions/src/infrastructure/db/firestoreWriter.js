@@ -80,9 +80,8 @@ class FirestoreWriter {
         contentHash: generateContentHash(validatedArticle.title, validatedArticle.originalUrl),
       };
 
-      // Save to Firestore
-      const docRef = await this.db.collection(this.collection).add(articleDoc);
-      // above code should reference to the document id first then add or set the document
+      // Save to Firestore with custom ID
+      const docRef = await this.db.collection(this.collection).doc(articleDoc.id).set(articleDoc);
       
       logger.info('Article saved successfully', {
         docId: docRef.id,
