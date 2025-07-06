@@ -1,6 +1,6 @@
 # 📰 FeedBeep Content Ingestion Pipeline
 
-Automate the fetching, AI rewriting, and storage of news articles for the FeedBeep app. This pipeline fetches articles from NewsData.io, rewrites them using Gemini AI (Google), and stores the results in Firestore for delivery to your app or chatbot.
+Automate the fetching, AI rewriting, and storage of news articles for the FeedBeep app. This pipeline fetches articles from NewsData.io, rewrites them using Gemini AI (Google), and stores the results in Supabase for delivery to your app or chatbot.
 
 ---
 
@@ -33,7 +33,7 @@ Automate the fetching, AI rewriting, and storage of news articles for the FeedBe
           |
           v
 +---------------------+
-| firestoreWriter.js  |  ---> Firestore
+| supabaseWriter.js   |  ---> Supabase
 +---------------------+
 ```
 
@@ -52,19 +52,28 @@ Automate the fetching, AI rewriting, and storage of news articles for the FeedBe
       /ai
         rewriteService.js       # Rewrites content using Gemini AI
       /db
-        firestoreWriter.js      # Stores articles in Firestore
+        supabaseWriter.js       # Stores articles in Supabase
+      /scraper
+        scraperFallbackHandler.js # Fallback content scraper
     /config
       index.js                  # Loads and validates environment config
     /shared
       logger.js                 # Logging utility
       utils.js                  # Common helpers
+      rateLimiter.js            # API rate limiting
+      contentQualityAnalyzer.js # Content quality scoring
+      monitoring.js             # Performance monitoring
     /test
       sampleNews.json           # Sample data for testing
+      pipeline.test.js          # Unit tests
   index.js                      # Main entry point
+  server.js                     # HTTP API server
+firebase.json                   # Firebase Functions config
 .env.example                    # Example environment config
 package.json                    # Dependencies and scripts
 README.md                       # This file
 PRD.md                          # Product requirements doc
+API.md                          # API documentation
 ```
 
 ---
@@ -91,12 +100,12 @@ npm install
 - Fill in your API keys and Firebase service account details in `.env`:
   - `NEWSDATA_API_KEY` (from [NewsData.io](https://newsdata.io/))
   - `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/app/apikey))
-  - `FIREBASE_*` (from your Firebase service account JSON)
+- `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from your Supabase project settings)
 
-#### Firebase Setup
-- Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
-- Create a Firestore database (test mode is fine for dev)
-- Generate a service account key (JSON) and copy the values into your `.env`
+#### Supabase Setup
+- Create a Supabase project at [Supabase Console](https://supabase.com/dashboard)
+- Run the SQL migration in `supabase-migration.sql` in your Supabase SQL Editor to create the articles table
+- Copy your project URL and service role key into your `.env`
 
 ### 4. (Optional) Test with Sample Data
 - Use `functions/src/test/sampleNews.json` for local testing without hitting APIs.
@@ -122,15 +131,15 @@ node functions/src/index.js
 
 - **newsFetcher.js**: Fetches and cleans articles from NewsData.io
 - **rewriteService.js**: Uses Gemini AI to rewrite title, summary, and body
-- **firestoreWriter.js**: Saves articles to Firestore, checks for duplicates
+- **supabaseWriter.js**: Saves articles to Supabase, checks for duplicates
 - **processArticle.js**: Orchestrates the pipeline (fetch → rewrite → store)
 - **logger.js**: Structured logging
 - **utils.js**: Helpers for cleaning, hashing, etc.
 
 ---
 
-## 🗃️ Firestore Schema
-Collection: `articles`
+## 🗃️ Supabase Schema
+Table: `articles`
 
 | Field              | Type        | Description                           |
 | ------------------ | ----------- | ------------------------------------- |
@@ -144,14 +153,14 @@ Collection: `articles`
 | `aiGenerated`      | `boolean`   | Always `true`                         |
 | `imageUrl`         | `string`    | (optional) License-free fetched image |
 | `imageAttribution` | `string`    | (optional) Attribution if needed      |
-| `createdAt`        | `timestamp` | Article ingestion time                |
+| `created_at`       | `timestamp` | Article ingestion time                |
 
 ---
 
 ## 🛠️ Troubleshooting & Tips
 
 - **Missing API Keys**: Ensure all required keys are set in `.env`.
-- **Firebase Errors**: Double-check your service account values and Firestore setup.
+- **Supabase Errors**: Double-check your project URL and service role key.
 - **Gemini AI Issues**: Make sure your Gemini API key is valid and has quota.
 - **No Articles Saved**: Check logs for duplicate detection or missing fields.
 - **Switching to OpenAI**: Add your `OPENAI_API_KEY` and set `AI_MODEL=openai` in `.env` (code may need minor extension).
