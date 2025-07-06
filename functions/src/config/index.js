@@ -10,16 +10,10 @@ const config = {
     openaiApiKey: process.env.OPENAI_API_KEY,
     model: process.env.AI_MODEL || 'geminipro',
   },
-  firebase: {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    privateKeyId: process.env.FIREBASE_PRIVATE_KEY_ID,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    clientId: process.env.FIREBASE_CLIENT_ID,
-    authUri: process.env.FIREBASE_AUTH_URI,
-    tokenUri: process.env.FIREBASE_TOKEN_URI,
-    authProviderX509CertUrl: process.env.FIREBASE_AUTH_PROVIDER_X509_CERT_URL,
-    clientX509CertUrl: process.env.FIREBASE_CLIENT_X509_CERT_URL,
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
   app: {
     logLevel: process.env.LOG_LEVEL || 'info',
@@ -31,9 +25,8 @@ const config = {
 const validateConfig = () => {
   const required = [
     'NEWSDATA_API_KEY',
-    'FIREBASE_PROJECT_ID',
-    'FIREBASE_PRIVATE_KEY',
-    'FIREBASE_CLIENT_EMAIL',
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
   ];
 
   const missing = required.filter(key => !process.env[key]);

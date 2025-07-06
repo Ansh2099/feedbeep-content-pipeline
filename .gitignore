@@ -5,7 +5,7 @@ node_modules/
 .env
 .env.*
 
-# Firebase service account keys
+# Service account keys and config files
 *.json
 !functions/src/test/sampleNews.json
 
@@ -34,7 +34,7 @@ build/
 .idea/
 *.swp
 
-# Ignore local Firebase config
+# Ignore local config files
 .firebase/
 .firebaserc
 firebase-debug.log
