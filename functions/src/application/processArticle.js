@@ -1,13 +1,15 @@
 const NewsDataFetcher = require('../infrastructure/newsdata/newsFetcher');
 const RewriteService = require('../infrastructure/ai/rewriteService');
-const FirestoreWriter = require('../infrastructure/db/firestoreWriter');
+const SupabaseWriter = require('../infrastructure/db/supabaseWriter');
+const ScraperFallbackHandler = require('../infrastructure/scraper/scraperFallbackHandler');
 const logger = require('../shared/logger');
 
 class ArticleProcessor {
   constructor() {
     this.newsFetcher = new NewsDataFetcher();
     this.rewriteService = new RewriteService();
-    this.firestoreWriter = new FirestoreWriter();
+    this.supabaseWriter = new SupabaseWriter();
+    this.scraperFallback = new ScraperFallbackHandler();
   }
 
   /**
@@ -27,14 +29,46 @@ class ArticleProcessor {
         return { processed: 0, errors: [] };
       }
 
-      // Step 2: Filter articles with sufficient content
-      const articlesWithContent = rawArticles.filter(article => 
-        this.newsFetcher.hasSufficientContent(article)
-      );
+      // Step 2: Process articles with insufficient content through fallback scraper
+      const articlesWithContent = [];
+      const articlesNeedingScraping = [];
 
-      logger.info('Articles with sufficient content', {
+      for (const article of rawArticles) {
+        if (this.newsFetcher.hasSufficientContent(article)) {
+          articlesWithContent.push(article);
+        } else {
+          articlesNeedingScraping.push(article);
+        }
+      }
+
+      // Step 2.5: Try to scrape content for articles without full content
+      if (articlesNeedingScraping.length > 0 && this.scraperFallback.isAvailable()) {
+        logger.info('Attempting to scrape content for articles without full content', {
+          count: articlesNeedingScraping.length
+        });
+
+        for (const article of articlesNeedingScraping) {
+          try {
+            const scrapedArticle = await this.scraperFallback.scrapeArticleContent(article);
+            if (scrapedArticle && scrapedArticle.hasFullContent) {
+              articlesWithContent.push(scrapedArticle);
+              logger.info('Successfully scraped article content', {
+                title: article.title?.substring(0, 50) + '...'
+              });
+            }
+          } catch (error) {
+            logger.warn('Failed to scrape article', {
+              title: article.title?.substring(0, 50) + '...',
+              error: error.message
+            });
+          }
+        }
+      }
+
+      logger.info('Articles ready for processing', {
         total: rawArticles.length,
         withContent: articlesWithContent.length,
+        scraped: articlesWithContent.length - rawArticles.filter(a => this.newsFetcher.hasSufficientContent(a)).length,
         skipped: rawArticles.length - articlesWithContent.length,
       });
 
@@ -55,8 +89,8 @@ class ArticleProcessor {
         }
       }
 
-      // Step 4: Save to Firestore
-      const saveResults = await this.firestoreWriter.saveArticles(processedArticles);
+      // Step 4: Save to Supabase
+      const saveResults = await this.supabaseWriter.saveArticles(processedArticles);
       
       // Combine errors
       const allErrors = [...errors, ...saveResults.errors];
@@ -100,7 +134,7 @@ class ArticleProcessor {
       });
 
       const rewrittenArticle = await this.rewriteService.rewriteArticle(article);
-      const savedArticle = await this.firestoreWriter.saveArticle(rewrittenArticle);
+      const savedArticle = await this.supabaseWriter.saveArticle(rewrittenArticle);
 
       return savedArticle;
 
@@ -115,11 +149,11 @@ class ArticleProcessor {
    */
   async getStatus() {
     try {
-      const articleCount = await this.firestoreWriter.getArticleCount();
+      const articleCount = await this.supabaseWriter.getArticleCount();
       const aiAvailable = this.rewriteService.isAvailable();
 
       return {
-        firestoreConnected: !!this.firestoreWriter.db,
+        supabaseConnected: !!this.supabaseWriter.supabase,
         aiServiceAvailable: aiAvailable,
         totalArticles: articleCount,
         timestamp: new Date().toISOString(),
@@ -127,7 +161,7 @@ class ArticleProcessor {
     } catch (error) {
       logger.error('Error getting pipeline status', { error: error.message });
       return {
-        firestoreConnected: false,
+        supabaseConnected: false,
         aiServiceAvailable: false,
         totalArticles: 0,
         error: error.message,
