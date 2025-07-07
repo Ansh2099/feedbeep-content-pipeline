@@ -8,6 +8,7 @@ node_modules/
 # Service account keys and config files
 *.json
 !functions/src/test/sampleNews.json
+!package.json
 
 # Logs
 logs/
