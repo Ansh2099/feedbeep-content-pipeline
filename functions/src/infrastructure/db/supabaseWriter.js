@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const { createClient } = require('@supabase/supabase-js');
 const { config } = require('../../config');
 const logger = require('../../shared/logger');
 const { 
@@ -7,49 +7,36 @@ const {
   formatTimestamp 
 } = require('../../shared/utils');
 
-class FirestoreWriter {
+class SupabaseWriter {
   constructor() {
-    this.db = null;
-    this.collection = 'articles';
-    this.initializeFirebase();
+    this.supabase = null;
+    this.table = 'articles';
+    this.initializeSupabase();
   }
 
   /**
-   * Initialize Firebase Admin SDK
+   * Initialize Supabase client
    */
-  initializeFirebase() {
+  initializeSupabase() {
     try {
-      if (!admin.apps.length) {
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId: config.firebase.projectId,
-            privateKeyId: config.firebase.privateKeyId,
-            privateKey: config.firebase.privateKey,
-            clientEmail: config.firebase.clientEmail,
-            clientId: config.firebase.clientId,
-            authUri: config.firebase.authUri,
-            tokenUri: config.firebase.tokenUri,
-            authProviderX509CertUrl: config.firebase.authProviderX509CertUrl,
-            clientX509CertUrl: config.firebase.clientX509CertUrl,
-          }),
-        });
-      }
-      
-      this.db = admin.firestore();
-      logger.info('Firebase Admin SDK initialized successfully');
+      this.supabase = createClient(
+        config.supabase.url,
+        config.supabase.serviceRoleKey
+      );
+      logger.info('Supabase client initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize Firebase Admin SDK', { error: error.message });
+      logger.error('Failed to initialize Supabase client', { error: error.message });
       throw error;
     }
   }
 
   /**
-   * Save a single article to Firestore
+   * Save a single article to Supabase
    */
   async saveArticle(article) {
     try {
-      if (!this.db) {
-        throw new Error('Firestore not initialized');
+      if (!this.supabase) {
+        throw new Error('Supabase client not initialized');
       }
 
       // Validate article data
@@ -70,32 +57,40 @@ class FirestoreWriter {
         title: validatedArticle.title,
         summary: validatedArticle.summary,
         body: validatedArticle.body,
-        originalUrl: validatedArticle.originalUrl,
+        original_url: validatedArticle.originalUrl,
         source: validatedArticle.source,
         topics: validatedArticle.topics || [],
-        aiGenerated: true,
-        imageUrl: validatedArticle.imageUrl || null,
-        imageAttribution: validatedArticle.imageAttribution || null,
-        createdAt: formatTimestamp(),
-        contentHash: generateContentHash(validatedArticle.title, validatedArticle.originalUrl),
+        ai_generated: true,
+        image_url: validatedArticle.imageUrl || null,
+        image_attribution: validatedArticle.imageAttribution || null,
+        created_at: formatTimestamp(),
+        content_hash: generateContentHash(validatedArticle.title, validatedArticle.originalUrl),
       };
 
-      // Save to Firestore with custom ID
-      const docRef = await this.db.collection(this.collection).doc(articleDoc.id).set(articleDoc);
+      // Save to Supabase
+      const { data, error } = await this.supabase
+        .from(this.table)
+        .insert(articleDoc)
+        .select()
+        .single();
+      
+      if (error) {
+        throw new Error(`Supabase insert error: ${error.message}`);
+      }
       
       logger.info('Article saved successfully', {
-        docId: docRef.id,
-        title: articleDoc.title?.substring(0, 50) + '...',
-        source: articleDoc.source,
+        docId: data.id,
+        title: data.title?.substring(0, 50) + '...',
+        source: data.source,
       });
 
       return {
-        id: docRef.id,
-        ...articleDoc,
+        id: data.id,
+        ...data,
       };
 
     } catch (error) {
-      logger.error('Error saving article to Firestore', {
+      logger.error('Error saving article to Supabase', {
         error: error.message,
         articleTitle: article.title?.substring(0, 50),
       });
@@ -104,10 +99,8 @@ class FirestoreWriter {
   }
 
   /**
-   * Save multiple articles to Firestore
+   * Save multiple articles to Supabase
    */
-
-  //firestore should save the articles, it just pushes to a result array
   async saveArticles(articles) {
     const results = [];
     const errors = [];
@@ -167,13 +160,17 @@ class FirestoreWriter {
    */
   async checkDuplicate(originalUrl) {
     try {
-      const snapshot = await this.db
-        .collection(this.collection)
-        .where('originalUrl', '==', originalUrl)
-        .limit(1)
-        .get();
+      const { data, error } = await this.supabase
+        .from(this.table)
+        .select('id')
+        .eq('original_url', originalUrl)
+        .limit(1);
 
-      return !snapshot.empty;
+      if (error) {
+        throw new Error(`Supabase query error: ${error.message}`);
+      }
+
+      return data && data.length > 0;
     } catch (error) {
       logger.warn('Error checking for duplicates', { error: error.message });
       return false; // Allow save if check fails
@@ -181,12 +178,19 @@ class FirestoreWriter {
   }
 
   /**
-   * Get article count in collection
+   * Get article count in table
    */
   async getArticleCount() {
     try {
-      const snapshot = await this.db.collection(this.collection).get();
-      return snapshot.size;
+      const { count, error } = await this.supabase
+        .from(this.table)
+        .select('*', { count: 'exact', head: true });
+
+      if (error) {
+        throw new Error(`Supabase count error: ${error.message}`);
+      }
+
+      return count || 0;
     } catch (error) {
       logger.error('Error getting article count', { error: error.message });
       return 0;
@@ -194,4 +198,4 @@ class FirestoreWriter {
   }
 }
 
-module.exports = FirestoreWriter; 
+module.exports = SupabaseWriter; 
