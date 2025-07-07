@@ -2,7 +2,7 @@
 
 ## 📌 Overview
 
-This service is responsible for fetching news articles from public APIs (like NewsData.io), rewriting them using AI (Gemini/OpenAI), and storing the rewritten articles in Firestore for delivery through the FeedBeep app and chatbot interface.
+This service is responsible for fetching news articles from public APIs (like NewsData.io), rewriting them using AI (Gemini/OpenAI), and storing the rewritten articles in Supabase for delivery through the FeedBeep app and chatbot interface.
 
 ---
 
@@ -33,7 +33,7 @@ This service is responsible for fetching news articles from public APIs (like Ne
            |
            v
 +---------------------+
-| firestoreWriter.js  |-----> Firestore (articles collection)
+| supabaseWriter.js   |-----> Supabase (articles table)
 +---------------------+
 ```
 
@@ -53,9 +53,9 @@ If `full_content` is missing:
 
 ---
 
-## 📤 Output (Firestore Schema)
+## 📤 Output (Supabase Schema)
 
-Collection: `articles`
+Table: `articles`
 
 | Field              | Type        | Description                           |
 | ------------------ | ----------- | ------------------------------------- |
@@ -69,7 +69,7 @@ Collection: `articles`
 | `aiGenerated`      | `boolean`   | Always `true`                         |
 | `imageUrl`         | `string`    | (optional) License-free fetched image |
 | `imageAttribution` | `string`    | (optional) Attribution if needed      |
-| `createdAt`        | `timestamp` | Article ingestion time                |
+| `created_at`       | `timestamp` | Article ingestion time                |
 
 ---
 
@@ -91,9 +91,9 @@ Collection: `articles`
   * Clean the article body
 * Returns structured object
 
-### ✅ `firestoreWriter.js`
+### ✅ `supabaseWriter.js`
 
-* Writes formatted articles to Firestore
+* Writes formatted articles to Supabase
 * Adds timestamp and metadata
 
 ### ✅ (Optional) `scraperFallbackHandler.js`
@@ -149,7 +149,7 @@ Collection: `articles`
 
 * [ ] At least 5–10 articles fetched from NewsData.io
 * [ ] AI rewrite returns headline, summary, and clean body
-* [ ] Articles saved in Firestore (mock or real)
+* [ ] Articles saved in Supabase (mock or real)
 * [ ] Logs in place for errors and full\_content gaps
 * [ ] Fallback scraper can be plugged in smoothly
 
@@ -159,7 +159,7 @@ Collection: `articles`
 
 * `"Write a Node.js function to fetch from NewsData.io with full_content=1"`
 * `"Stub a Gemini AI API call for rewriting article content"`
-* `"Generate a Firestore insert function for rewritten article objects"`
+* `"Generate a Supabase insert function for rewritten article objects"`
 * `"Log and skip if full_content field is missing"`
 * `"Design a modular architecture for a scheduled content pipeline"`
 
