@@ -1,15 +1,16 @@
 # 📰 FeedBeep Content Ingestion Pipeline
 
-Automate the fetching, AI rewriting, and storage of news articles for the FeedBeep app. This pipeline fetches articles from NewsData.io, rewrites them using Gemini AI (Google), and stores the results in Supabase for delivery to your app or chatbot.
+Automate the fetching, AI rewriting, and storage of news articles for the FeedBeep app. This pipeline fetches articles from NewsData.io (and optionally GNews), rewrites them using Gemini AI (Google) or OpenAI, and stores the results in Supabase for delivery to your app or chatbot.
 
 ---
 
 ## 🚀 Features
-- Fetches news articles from NewsData.io with full content
-- Rewrites headlines, summaries, and article bodies using Gemini AI
-- Stores rewritten articles in Firestore with rich metadata
+- Fetches news articles from NewsData.io (and optionally GNews) with full content
+- Rewrites headlines, summaries, and article bodies using Gemini AI or OpenAI
+- Stores rewritten articles in Supabase with rich metadata
 - Modular, extensible architecture (easy to add new sources or AI models)
-- Logging and duplicate detection
+- Logging, duplicate detection, and content quality analysis
+- Rate limiting and monitoring built-in
 - Ready for local development, manual runs, or scheduled deployment
 
 ---
@@ -23,12 +24,12 @@ Automate the fetching, AI rewriting, and storage of news articles for the FeedBe
           |
           v
 +---------------------+
-| newsFetcher.js      |  ---> NewsData.io
+| newsFetcher.js      |  ---> NewsData.io / GNews
 +---------------------+
           |
           v
 +---------------------+
-| rewriteService.js   |  ---> Gemini AI
+| rewriteService.js   |  ---> Gemini AI / OpenAI
 +---------------------+
           |
           v
@@ -48,9 +49,9 @@ Automate the fetching, AI rewriting, and storage of news articles for the FeedBe
       processArticle.js         # Orchestrates the pipeline
     /infrastructure
       /newsdata
-        newsFetcher.js          # Fetches news from NewsData.io
+        newsFetcher.js          # Fetches news from NewsData.io (and GNews)
       /ai
-        rewriteService.js       # Rewrites content using Gemini AI
+        rewriteService.js       # Rewrites content using Gemini AI or OpenAI
       /db
         supabaseWriter.js       # Stores articles in Supabase
       /scraper
@@ -67,7 +68,7 @@ Automate the fetching, AI rewriting, and storage of news articles for the FeedBe
       sampleNews.json           # Sample data for testing
       pipeline.test.js          # Unit tests
   index.js                      # Main entry point
-  server.js                     # HTTP API server
+  server.js                     # HTTP API server (if present)
 firebase.json                   # Firebase Functions config
 .env.example                    # Example environment config
 package.json                    # Dependencies and scripts
@@ -100,6 +101,8 @@ npm install
 - Fill in your API keys and Firebase service account details in `.env`:
   - `NEWSDATA_API_KEY` (from [NewsData.io](https://newsdata.io/))
   - `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/app/apikey))
+  - `OPENAI_API_KEY` (from [OpenAI](https://platform.openai.com/))
+  - `GNEWS_API_KEY` (optional, from [GNews](https://gnews.io/))
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from your Supabase project settings)
 
 #### Supabase Setup
@@ -123,18 +126,22 @@ node functions/src/index.js
 
 ### (Optional) HTTP/Cloud Function
 - The code is structured for easy integration with Express or Firebase Functions if you want to trigger via HTTP or schedule.
-- See `functions/src/index.js` for exported handlers.
+- See `functions/src/index.js` for exported handlers (manualTrigger, scheduledTrigger, getStatus, testSingleArticle).
 
 ---
 
 ## 🧩 Module Responsibilities
 
-- **newsFetcher.js**: Fetches and cleans articles from NewsData.io
-- **rewriteService.js**: Uses Gemini AI to rewrite title, summary, and body
+- **newsFetcher.js**: Fetches and cleans articles from NewsData.io (and GNews)
+- **rewriteService.js**: Uses Gemini AI or OpenAI to rewrite title, summary, and body
 - **supabaseWriter.js**: Saves articles to Supabase, checks for duplicates
 - **processArticle.js**: Orchestrates the pipeline (fetch → rewrite → store)
+- **scraperFallbackHandler.js**: Scrapes content if full content is missing
 - **logger.js**: Structured logging
 - **utils.js**: Helpers for cleaning, hashing, etc.
+- **rateLimiter.js**: API rate limiting
+- **contentQualityAnalyzer.js**: Scores and analyzes article quality
+- **monitoring.js**: Tracks pipeline runs, errors, and metrics
 
 ---
 
@@ -161,9 +168,9 @@ Table: `articles`
 
 - **Missing API Keys**: Ensure all required keys are set in `.env`.
 - **Supabase Errors**: Double-check your project URL and service role key.
-- **Gemini AI Issues**: Make sure your Gemini API key is valid and has quota.
+- **Gemini/OpenAI Issues**: Make sure your API keys are valid and have quota.
 - **No Articles Saved**: Check logs for duplicate detection or missing fields.
-- **Switching to OpenAI**: Add your `OPENAI_API_KEY` and set `AI_MODEL=openai` in `.env` (code may need minor extension).
+- **Switching AI Models**: Set `AI_MODEL` in `.env` to `geminipro` or `gpt-4` as needed.
 
 ---
 
@@ -174,7 +181,7 @@ Table: `articles`
 ---
 
 ## 📄 License
-MIT
+MIT (see LICENSE for commercial use restrictions)
 
 ---
 
