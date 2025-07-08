@@ -19,6 +19,10 @@ const config = {
     logLevel: process.env.LOG_LEVEL || 'info',
     maxArticlesPerFetch: parseInt(process.env.MAX_ARTICLES_PER_FETCH) || 10,
   },
+  gnews: {
+    apiKey: process.env.GNEWS_API_KEY,
+    baseUrl: process.env.GNEWS_BASE_URL || 'https://gnews.io/api/v4/search',
+  },
 };
 
 // Validate required configuration
