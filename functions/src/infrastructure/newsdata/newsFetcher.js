@@ -2,6 +2,7 @@ const axios = require('axios');
 const { config } = require('../../config');
 const logger = require('../../shared/logger');
 const { cleanUrl, extractDomain, cleanContent, isValidArticle } = require('../../shared/utils');
+const { fetchGNewsArticles } = require('./gnewsFetcher');
 
 class NewsDataFetcher {
   constructor() {
@@ -49,7 +50,26 @@ class NewsDataFetcher {
         status: error.response?.status,
         data: error.response?.data,
       });
-      throw error;
+      // Fallback to GNews
+      logger.info('Falling back to GNews API for articles', { topics, language });
+      try {
+        const gnewsArticles = await fetchGNewsArticles({ topics, language, max: this.maxArticles });
+        logger.info(`Fetched ${gnewsArticles.length} articles from GNews`);
+        // Normalize GNews articles to match expected structure
+        return gnewsArticles.map(article => ({
+          title: article.title?.trim(),
+          content: article.content || article.description || '',
+          originalUrl: cleanUrl(article.url),
+          source: extractDomain(article.url),
+          imageUrl: article.imageUrl || null,
+          publishedAt: article.publishedAt ? new Date(article.publishedAt) : null,
+          topics: topics,
+          hasFullContent: false, // GNews does not provide full content
+        }));
+      } catch (gnewsError) {
+        logger.error('GNews fallback also failed', { error: gnewsError.message });
+        throw error; // Throw original NewsData error
+      }
     }
   }
 
